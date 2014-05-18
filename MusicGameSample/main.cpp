@@ -1,8 +1,9 @@
 #include <windows.h>
 #include <tchar.h>
 #include <glew.h>
+#include "Window.h"
 
-const wchar_t *gName = L"OpenGLテスト";
+const TCHAR * gName = L"OpenGLテスト";
 
 // ウィンドウプロシージャ
 LRESULT CALLBACK WndProc(HWND hWnd, UINT mes, WPARAM wParam, LPARAM lParam){
@@ -74,7 +75,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 			glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			glRectf(-0.5f, -0.5f, 0.5f, 0.5f);
+			//glRectf(-0.5f, -0.5f, 0.5f, 0.5f);
+
+			glBegin(GL_TRIANGLE_STRIP);
+
+			glVertex3d(-0.5, -0.5, 0.0);
+			glVertex3d( 0.5, -0.5, 0.0);
+			glVertex3d(-0.5,  0.5, 0.0);
+			glVertex3d( 0.5,  0.5, -0.5);
+
+			glEnd();
 
 			glFlush();
 			SwapBuffers(dc);

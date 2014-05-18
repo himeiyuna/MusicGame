@@ -41,13 +41,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>boost_1_55_0\libs;glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
-    <IncludePath>boost_1_55_0;glew-1.10.0\include\GL;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\relay\Documents\boost_1_55_0\libs;glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\relay\Documents\boost_1_55_0;glew-1.10.0\include\GL;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>boost_1_55_0\libs;glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
-    <IncludePath>boost_1_55_0;glew-1.10.0\include\GL;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\relay\Documents\boost_1_55_0\libs;glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\relay\Documents\boost_1_55_0;glew-1.10.0\include\GL;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

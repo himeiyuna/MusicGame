@@ -1,42 +1,19 @@
+#pragma once
+#include <boost/type_erasure/any_cast.hpp>
+#include <boost/type_erasure/member.hpp>
+#include <boost/mpl/vector.hpp>
 #include <Windows.h>
 #include <memory>
 #include <string>
 
-///@brief Windowsウィンドウ管理インターフェース
-class Window
-{
-	class HolderBase
-	{
-	public:
-		virtual ~HolderBase() {}
-		virtual void createWindow(std::string & windowTitle) = 0;
-		virtual void destroyWindow() = 0;
-	};
+BOOST_TYPE_ERASURE_MEMBER((has_update), update, 0)
 
-	template <class T>
-	class Holder : public HolderBase
-	{
-		std::shared_ptr<T> ptr_;
-	public:
-		Holder(std::shared_ptr<T> & ptr)
-		{
-			ptr_ = ptr;
-		}
-		virtual ~Holder() {}
-		
-		///@brief ウィンドウ生成
-		virtual void createWindow(std::string & windowTitle)
-		{
-			ptr_->createWindow(windowTitle);
-		}
+typedef boost::mpl::vector<
+	has_update<void()>
+> Updatable;
 
-		///@brief ウィンドウ破棄
-		virtual void destroyWindow()
-		{
-			ptr_->destroyWindow();
-		}
-	};
+BOOST_TYPE_ERASURE_MEMBER((has_render), render, 0)
 
-	std::shared_ptr<HolderBase> window_;
-public:
-};
+typedef boost::mpl::vector<
+	has_render<void()>
+> Renderer;
