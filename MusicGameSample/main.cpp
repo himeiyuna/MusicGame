@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <glew.h>
-#include "Window.h"
+#include "GameObject.h"
 
 const TCHAR * gName = L"OpenGLテスト";
 
@@ -64,6 +64,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
 	ShowWindow(hWnd, nCmdShow);
 
+	MyObj obj;
+
 	// メッセージ ループ
 	do{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
@@ -77,14 +79,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
 			//glRectf(-0.5f, -0.5f, 0.5f, 0.5f);
 
-			glBegin(GL_TRIANGLE_STRIP);
-
-			glVertex3d(-0.5, -0.5, 0.0);
-			glVertex3d( 0.5, -0.5, 0.0);
-			glVertex3d(-0.5,  0.5, 0.0);
-			glVertex3d( 0.5,  0.5, -0.5);
-
-			glEnd();
+			obj.update();
 
 			glFlush();
 			SwapBuffers(dc);
