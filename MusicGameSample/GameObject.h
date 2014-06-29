@@ -2,6 +2,7 @@
 #include <string>
 #include <boost/unordered_map.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/optional.hpp>
@@ -14,15 +15,15 @@ namespace Ash
 	class GameObject;
 }
 
-class Ash::GameComponent
+class Ash::GameComponent : private boost::noncopyable
 {
 	friend class Ash::GameObject;
 
 	///@brief 自身を組み込んでいるオブジェクト
-	GameObject& gameObject;
+	GameObject & gameObject;
 
 protected:
-	GameComponent(GameObject& obj) : gameObject(obj)
+	GameComponent(GameObject & obj) : gameObject(obj)
 	{
 	}
 	virtual ~GameComponent()
@@ -33,7 +34,7 @@ protected:
 public:
 	///@brief 自身を組み込むオブジェクトを取得する
 	///@return ゲームオブジェクト
-	GameObject& getGameObject() { return gameObject; }
+	GameObject & getGameObject() { return gameObject; } 
 };
 
 ///@brief 3D空間の情報を管理するクラス
@@ -41,14 +42,18 @@ class Ash::Transform : public Ash::GameComponent
 {
 	///@brief 座標値
 	Math::Vector3 localPosition;
+
+	///@brief スケール値
 	Math::Vector3 localScale;
+
+	///@brief 姿勢値
 	Math::Quaternion localRotation;
 
 	///@brief 親のポインタ
 	boost::shared_ptr<Transform> parent;
 
 public:
-	Transform(GameObject& obj) : GameComponent(obj), localPosition(), localScale(1.0f, 1.0f, 1.0f), localRotation()
+	Transform(GameObject & obj) : GameComponent(obj), localPosition(), localScale(1.0f, 1.0f, 1.0f), localRotation()
 	{
 	}
 	~Transform()
@@ -56,7 +61,7 @@ public:
 		int i = 0;
 	}
 
-	boost::optional<Transform&> getParent()
+	boost::optional<Transform &> getParent()
 	{
 		if (parent == nullptr) {
 			return boost::none;
@@ -65,9 +70,9 @@ public:
 	}
 
 	///@brief Local空間の情報を取得するアクセサ
-	Math::Vector3& getLocalPosition() { return localPosition; }
-	Math::Vector3& getLocalScale() { return localScale; }
-	Math::Quaternion& getLocalRotation() { return localRotation; }
+	Math::Vector3 & getLocalPosition() { return localPosition; }
+	Math::Vector3 & getLocalScale() { return localScale; }
+	Math::Quaternion & getLocalRotation() { return localRotation; }
 
 	Math::Matrix getLocalMatrix()
 	{
@@ -103,30 +108,44 @@ class Ash::GameObject
 
 	///@brief 組み込んでいるコンポーネント
 	boost::unordered_multimap<std::string, boost::shared_ptr<GameComponent>> components;
+
 public:
-	GameObject() : transform(new Ash::Transform(*this))
-	{
-	}
-	GameObject(GameObject& parent)
-	{}
-	~GameObject()
-	{}
+	GameObject();
+	GameObject(GameObject & parent);
+	virtual ~GameObject();
 
-	Transform& getTransform() { return *transform; }
+	///@brief 位置情報の取得
+	///@return 位置情報
+	inline Transform & getTransform() { return *transform; }
 
-	void update()
+	///@brief コンポーネントの更新
+	void update();
+
+	///@brief コンポーネントを取得する
+	///@param [in] T 取得したいコンポーネントの型
+	///@return 指定したコンポーネント（同じコンポーネントがついていた場合はどれが取得できるかは未定義）
+	template <class T> boost::optional<boost::shared_ptr<T>> getComponent()
 	{
-		for each (auto com in components) {
-			com.second->update();
+		auto i = components.find(typeid(T).name());
+		if (i == components.end()) {
+			return boost::none;
 		}
+		return boost::dynamic_pointer_cast<T>(i->second);
 	}
 
-	template <class T>
-	void addComponent(std::function<void(T&)> initializer)
+	///@brief コンポーネントを追加する
+	///@param [in] T 追加したいコンポーネントの型
+	template <class T> void addComponent()
 	{
-		boost::shared_ptr<T> com(new T(*this));
-		initializer(*com);
+		auto com = boost::make_shared<T>(*this);
 		components.insert(std::pair<std::string, boost::shared_ptr<GameComponent>>(typeid(T).name(), com));
+	}
+
+	///@brief コンポーネントを削除する
+	///@param [in] T 削除したいコンポーネントの型
+	template <class T> void removeComponent()
+	{
+		components.erase(typeid(T).name());
 	}
 };
 
@@ -164,10 +183,7 @@ class MyObj
 public:
 	MyObj() : obj(new Ash::GameObject())
 	{
-		obj->addComponent<Renderer>([](Renderer& r) -> void {
-			auto go = r.getGameObject().getTransform();
-			r.getGameObject().getTransform().getLocalPosition().x += -0.5f;
-		});
+		obj->addComponent<Renderer>();
 	}
 
 	void update()
