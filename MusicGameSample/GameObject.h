@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/optional.hpp>
+
 #include "Math.h"
 
 namespace Ash
@@ -50,7 +51,13 @@ class Ash::Transform : public Ash::GameComponent
 	Math::Quaternion localRotation;
 
 	///@brief 親のポインタ
-	boost::shared_ptr<Transform> parent;
+	boost::weak_ptr<Transform> parent;
+
+	///@brief 子のポインタ
+	boost::unordered_map<const std::string, boost::shared_ptr<Transform>> children;
+
+	///@brief 子を設定する
+	void setChild(boost::shared_ptr<Transform> & child);
 
 public:
 	Transform(GameObject & obj) : GameComponent(obj), localPosition(), localScale(1.0f, 1.0f, 1.0f), localRotation()
@@ -58,16 +65,14 @@ public:
 	}
 	~Transform()
 	{
-		int i = 0;
 	}
 
-	boost::optional<Transform &> getParent()
-	{
-		if (parent == nullptr) {
-			return boost::none;
-		}
-		return *parent.get();
-	}
+	///@brief 親を設定する
+	void setParent(boost::shared_ptr<Transform> & p);
+
+	///@brief 親を取得する
+	///@return 親
+	boost::optional<boost::shared_ptr<Transform>> getParent();
 
 	///@brief Local空間の情報を取得するアクセサ
 	Math::Vector3 & getLocalPosition() { return localPosition; }
@@ -90,7 +95,7 @@ public:
 	Math::Matrix getWorldMatrix()
 	{
 		if (auto parent = getParent()) {
-			return getLocalMatrix() * parent->getWorldMatrix();
+			return getLocalMatrix() * parent.get()->getWorldMatrix();
 		} else {
 			return getLocalMatrix();
 		}
@@ -103,20 +108,27 @@ public:
 ///@brief このクラスを用いてゲーム内のオブジェクトを配置する
 class Ash::GameObject
 {
+	///@brief オブジェクト固有のID
+	const std::string objectId;
+
 	///@brief 3D空間の座標値等
-	std::unique_ptr<Transform> transform;
+	boost::shared_ptr<Transform> transform;
 
 	///@brief 組み込んでいるコンポーネント
-	boost::unordered_multimap<std::string, boost::shared_ptr<GameComponent>> components;
+	boost::unordered_multimap<const std::string, boost::shared_ptr<GameComponent>> components;
 
 public:
 	GameObject();
 	GameObject(GameObject & parent);
 	virtual ~GameObject();
 
+	///@brief オブジェクトIDを取得する
+	///@return ID
+	const std::string & getObjectId() const { return objectId; }
+
 	///@brief 位置情報の取得
 	///@return 位置情報
-	inline Transform & getTransform() { return *transform; }
+	boost::shared_ptr<Transform> getTransform() { return transform; }
 
 	///@brief コンポーネントの更新
 	void update();
@@ -138,7 +150,7 @@ public:
 	template <class T> void addComponent()
 	{
 		auto com = boost::make_shared<T>(*this);
-		components.insert(std::pair<std::string, boost::shared_ptr<GameComponent>>(typeid(T).name(), com));
+		components.insert(std::pair<const std::string, boost::shared_ptr<GameComponent>>(typeid(T).name(), com));
 	}
 
 	///@brief コンポーネントを削除する
@@ -165,7 +177,7 @@ public:
 	{
 		glBegin(GL_TRIANGLE_STRIP);
 
-		auto matrix = getGameObject().getTransform().getWorldMatrix();
+		auto matrix = getGameObject().getTransform()->getWorldMatrix();
 
 		glVertex3d(-0.5 + matrix.row[3].x, -0.5 + matrix.row[3].y, 0.0);
 		glVertex3d(0.5 + matrix.row[3].x, -0.5 + matrix.row[3].y, 0.0);
