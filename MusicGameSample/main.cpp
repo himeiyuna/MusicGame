@@ -2,6 +2,7 @@
 #include <tchar.h>
 #include <glew.h>
 #include "GameObject.h"
+#include "Renderer.h"
 
 const TCHAR * gName = L"OpenGLƒeƒXƒg";
 

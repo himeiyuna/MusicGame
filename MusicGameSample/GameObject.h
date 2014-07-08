@@ -1,3 +1,4 @@
+#pragma once
 #include <glew.h>
 #include <string>
 #include <boost/unordered_map.hpp>
@@ -23,8 +24,11 @@ class Ash::GameComponent : private boost::noncopyable
 	///@brief 自身を組み込んでいるオブジェクト
 	GameObject & gameObject;
 
+	///@brief 有効状態か
+	bool enable;
+
 protected:
-	GameComponent(GameObject & obj) : gameObject(obj)
+	GameComponent(GameObject & obj) : gameObject(obj), enable(true)
 	{
 	}
 	virtual ~GameComponent()
@@ -35,7 +39,11 @@ protected:
 public:
 	///@brief 自身を組み込むオブジェクトを取得する
 	///@return ゲームオブジェクト
-	GameObject & getGameObject() { return gameObject; } 
+	GameObject & getGameObject() { return gameObject; }
+
+	///@brief 有効状態かどうか
+	///@return 有効状態ならtrue
+	bool isEnable() { return enable; }
 };
 
 ///@brief 3D空間の情報を管理するクラス
@@ -57,49 +65,35 @@ class Ash::Transform : public Ash::GameComponent
 	boost::unordered_map<const std::string, boost::shared_ptr<Transform>> children;
 
 	///@brief 子を設定する
-	void setChild(boost::shared_ptr<Transform> & child);
+	void setChild(const boost::shared_ptr<Transform> & child);
 
 public:
 	Transform(GameObject & obj) : GameComponent(obj), localPosition(), localScale(1.0f, 1.0f, 1.0f), localRotation()
 	{
 	}
-	~Transform()
+	virtual ~Transform()
 	{
 	}
 
 	///@brief 親を設定する
-	void setParent(boost::shared_ptr<Transform> & p);
+	void setParent(const boost::shared_ptr<Transform> & p);
 
 	///@brief 親を取得する
 	///@return 親
-	boost::optional<boost::shared_ptr<Transform>> getParent();
+	boost::optional<const boost::shared_ptr<Transform> &> getParent();
 
 	///@brief Local空間の情報を取得するアクセサ
 	Math::Vector3 & getLocalPosition() { return localPosition; }
 	Math::Vector3 & getLocalScale() { return localScale; }
 	Math::Quaternion & getLocalRotation() { return localRotation; }
 
-	Math::Matrix getLocalMatrix()
-	{
-		Math::Matrix result;
-		Math::GetMatrixFromQuaternion(result, localRotation);
+	///@brief 親子関係を考慮しないワールド変換行列を取得
+	///@return ワールド変換行列
+	Math::Matrix getLocalTransform();
 
-		result.row[0].ToVector3() *= localScale.x;
-		result.row[1].ToVector3() *= localScale.y;
-		result.row[2].ToVector3() *= localScale.z;
-		result.row[3] = localPosition;
-
-		return result;
-	}
-
-	Math::Matrix getWorldMatrix()
-	{
-		if (auto parent = getParent()) {
-			return getLocalMatrix() * parent.get()->getWorldMatrix();
-		} else {
-			return getLocalMatrix();
-		}
-	}
+	///@brief 親子関係を考慮したワールド変換行列を取得
+	///@return ワールド変換行列
+	Math::Matrix getWorldTransform();
 
 	virtual void update()
 	{}
@@ -108,6 +102,9 @@ public:
 ///@brief このクラスを用いてゲーム内のオブジェクトを配置する
 class Ash::GameObject
 {
+	///@brief 活性状態か
+	bool active;
+
 	///@brief オブジェクト固有のID
 	const std::string objectId;
 
@@ -122,13 +119,21 @@ public:
 	GameObject(GameObject & parent);
 	virtual ~GameObject();
 
+	///@brief 活性状態か取得する
+	///@return 活性状態ならtrue
+	bool isActive() { return active; }
+
+	///@brief ヒエラルキー上で活性状態か取得する
+	///@return 活性状態ならtrue
+	bool isActiveInHierarchy();
+
 	///@brief オブジェクトIDを取得する
 	///@return ID
 	const std::string & getObjectId() const { return objectId; }
 
 	///@brief 位置情報の取得
 	///@return 位置情報
-	boost::shared_ptr<Transform> getTransform() { return transform; }
+	const boost::shared_ptr<Transform> & getTransform() { return transform; }
 
 	///@brief コンポーネントの更新
 	void update();
@@ -158,49 +163,6 @@ public:
 	template <class T> void removeComponent()
 	{
 		components.erase(typeid(T).name());
-	}
-};
-
-class Renderer : public Ash::GameComponent
-{
-public:
-	Renderer(Ash::GameObject& obj) : GameComponent(obj)
-	{
-
-	}
-	virtual ~Renderer()
-	{
-
-	}
-
-	virtual void update()
-	{
-		glBegin(GL_TRIANGLE_STRIP);
-
-		auto matrix = getGameObject().getTransform()->getWorldMatrix();
-
-		glVertex3d(-0.5 + matrix.row[3].x, -0.5 + matrix.row[3].y, 0.0);
-		glVertex3d(0.5 + matrix.row[3].x, -0.5 + matrix.row[3].y, 0.0);
-		glVertex3d(-0.5 + matrix.row[3].x, 0.5 + matrix.row[3].y, 0.0);
-		glVertex3d(0.5 + matrix.row[3].x, 0.5 + matrix.row[3].y, 0.0);
-
-		glEnd();
-	}
-};
-
-class MyObj
-{
-	boost::shared_ptr<Ash::GameObject> obj;
-
-public:
-	MyObj() : obj(new Ash::GameObject())
-	{
-		obj->addComponent<Renderer>();
-	}
-
-	void update()
-	{
-		obj->update();
 	}
 };
 
